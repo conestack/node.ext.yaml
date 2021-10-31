@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-TEST="bin/python -m node.ext.yaml.tests.__init__"
+TEST="bin/python -m node.ext.yaml.tests"
 
 clear
 
