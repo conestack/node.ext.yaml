@@ -22,7 +22,7 @@ def temp_directory(fn):
     return wrapper
 
 
-class TestModelBase(NodeTestCase):
+class TestYaml(NodeTestCase):
 
     @temp_directory
     def test_YamlRootStorage(self, tempdir):
