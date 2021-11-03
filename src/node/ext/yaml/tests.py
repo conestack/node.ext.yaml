@@ -134,6 +134,43 @@ class TestYaml(NodeTestCase):
         file.factories = dict()
         self.assertEqual(file['child'], odict([('baz', 'bam'), ('sub', odict())]))
 
+    @temp_directory
+    def test_Order(self, tempdir):
+        # XXX: Order behavior only works with node children right now.
+        #      Either extend Order behavior to also support keys or implement
+        #      dedicated YamlOrder providing this.
+        class TestYamlFile(YamlFile):
+            @property
+            def fs_path(self):
+                return os.path.join(tempdir, 'data.yaml')
+
+        file = TestYamlFile()
+        file['a'] = YamlNode()
+        file['b'] = YamlNode()
+        self.assertEqual(file.keys(), ['a', 'b'])
+
+        file.swap(file['a'], file['b'])
+        self.assertEqual(file.keys(), ['b', 'a'])
+
+        file()
+        with open(file.fs_path) as f:
+            self.assertEqual(f.read().split('\n'), [
+                'b: {}',
+                'a: {}', ''
+            ])
+
+        file = TestYamlFile()
+        self.assertEqual(file.keys(), ['b', 'a'])
+        file.swap(file['a'], file['b'])
+        self.assertEqual(file.keys(), ['a', 'b'])
+
+        file()
+        with open(file.fs_path) as f:
+            self.assertEqual(f.read().split('\n'), [
+                'a: {}',
+                'b: {}', ''
+            ])
+
 
 def test_suite():
     from node.ext.yaml import tests
