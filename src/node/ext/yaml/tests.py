@@ -1,9 +1,10 @@
-from node.tests import NodeTestCase
-from plumber import plumbing
 from node.ext.yaml import YamlFile
 from node.ext.yaml import YamlMemberStorage
 from node.ext.yaml import YamlNode
 from node.ext.yaml import YamlRootStorage
+from node.tests import NodeTestCase
+from odict import odict
+from plumber import plumbing
 import os
 import shutil
 import sys
@@ -43,7 +44,8 @@ class TestYaml(NodeTestCase):
 
         root = YamlRoot()
         storage = root.storage
-        self.assertEqual(storage, {})
+        self.assertIsInstance(storage, odict)
+        self.assertEqual(storage, odict())
         self.assertTrue(storage is root.storage)
         self.assertFalse(os.path.exists(root.fs_path))
         root()
@@ -54,7 +56,7 @@ class TestYaml(NodeTestCase):
         with open(root.fs_path) as f:
             self.assertEqual(f.read(), 'foo: bar\n')
         root = YamlRoot()
-        self.assertEqual(root.storage, {'foo': 'bar'})
+        self.assertEqual(root.storage, odict([('foo', 'bar')]))
 
     def test_YamlMemberStorage(self):
         @plumbing(YamlMemberStorage)
@@ -64,10 +66,11 @@ class TestYaml(NodeTestCase):
                 self.parent = parent
 
         member = YamlMember()
-        self.assertEqual(member.storage, {})
+        self.assertIsInstance(member.storage, odict)
+        self.assertEqual(member.storage, odict())
 
         parent = YamlMember()
-        parent.storage['name'] = {}
+        parent.storage['name'] = odict()
         member = YamlMember(name='name', parent=parent)
         self.assertTrue(member.storage is parent.storage['name'])
 
@@ -83,21 +86,27 @@ class TestYaml(NodeTestCase):
 
         self.assertRaises(KeyError, file.__getitem__, 'inexistent')
         file['foo'] = 'bar'
-        self.assertEqual(file.storage, {'foo': 'bar'})
+        self.assertEqual(file.storage, odict([('foo', 'bar')]))
 
         child = YamlNode()
         child['baz'] = 'bam'
         file['child'] = child
         self.assertTrue(child.storage is file.storage['child'])
-        self.assertEqual(file.storage, {'child': {'baz': 'bam'}, 'foo': 'bar'})
+        self.assertEqual(
+            file.storage,
+            odict([('foo', 'bar'), ('child', odict([('baz', 'bam')]))])
+        )
 
         sub = YamlNode()
         child['sub'] = sub
         self.assertTrue(sub.storage is file.storage['child']['sub'])
-        self.assertEqual(file.storage, {
-            'child': {'baz': 'bam', 'sub': {}},
-            'foo': 'bar'
-        })
+        self.assertEqual(file.storage, odict([
+            ('foo', 'bar'),
+            ('child', odict([
+                ('baz', 'bam'),
+                ('sub', odict())
+            ]))
+        ]))
 
         sub()
         with open(file.fs_path) as f:
@@ -123,7 +132,7 @@ class TestYaml(NodeTestCase):
         """, file.treerepr())
 
         file.factories = dict()
-        self.assertEqual(file['child'], {'baz': 'bam', 'sub': {}})
+        self.assertEqual(file['child'], odict([('baz', 'bam'), ('sub', odict())]))
 
 
 def test_suite():

@@ -4,6 +4,7 @@ from node.behaviors import Nodify
 from node.behaviors import Storage
 from node.interfaces import IStorage
 from node.utils import instance_property
+from odict import odict
 from plumber import default
 from plumber import finalize
 from plumber import override
@@ -12,6 +13,44 @@ from plumber import plumbing
 from zope.interface import implementer
 import os
 import yaml
+
+
+class OrderedLoader(yaml.SafeLoader):
+
+    @staticmethod
+    def construct_mapping(loader, node):
+        loader.flatten_mapping(node)
+        return odict(loader.construct_pairs(node))
+
+
+OrderedLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    OrderedLoader.construct_mapping
+)
+
+
+def ordered_load(stream):
+    return yaml.load(stream, OrderedLoader)
+
+
+class OrderedDumper(yaml.SafeDumper):
+
+    @staticmethod
+    def odict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            data.items()
+        )
+
+
+OrderedDumper.add_representer(
+    odict,
+    OrderedDumper.odict_representer
+)
+
+
+def ordered_dump(data, stream=None, **kw):
+    return yaml.dump(data, stream, OrderedDumper, **kw)
 
 
 class IYamlStorage(IStorage):
@@ -36,7 +75,7 @@ class YamlStorage(Storage):
     @override
     def __getitem__(self, name):
         val = self.storage[name]
-        if isinstance(val, dict):
+        if isinstance(val, odict):
             factory = self.factories.get(name, self.factories.get('*'))
             if factory is not None:
                 val = factory(name=name, parent=self)
@@ -69,14 +108,14 @@ class YamlRootStorage(YamlStorage):
     def storage(self):
         if os.path.exists(self.fs_path):
             with open(self.fs_path) as f:
-                return yaml.safe_load(f.read())
-        return dict()
+                return ordered_load(f.read())
+        return odict()
 
     @finalize
     def __call__(self):
         if self.storage:
             with open(self.fs_path, 'w') as f:
-                f.write(yaml.safe_dump(self.storage, sort_keys=False))
+                f.write(ordered_dump(self.storage, sort_keys=False))
 
 
 @implementer(IYamlMember)
@@ -90,7 +129,7 @@ class YamlMemberStorage(YamlStorage):
         if parent and name in parent.storage:
             self._storage = parent.storage[name]
         else:
-            self._storage = dict()
+            self._storage = odict()
 
     @finalize
     @property
