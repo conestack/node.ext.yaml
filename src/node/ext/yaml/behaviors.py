@@ -4,8 +4,10 @@ from .interfaces import IYamlMember
 from .interfaces import IYamlRoot
 from .interfaces import IYamlStorage
 from node.behaviors import Storage
+from node.interfaces import ICallable
 from node.utils import instance_property
 from odict import odict
+from plumber import Behavior
 from plumber import default
 from plumber import finalize
 from plumber import override
@@ -33,14 +35,8 @@ class YamlStorage(Storage):
             val = val.storage
         self.storage[name] = val
 
-    @override
-    def __call__(self):
-        yaml_root = self.acquire(IYamlRoot)
-        if yaml_root:
-            yaml_root()
 
-
-@implementer(IYamlRoot)
+@implementer(IYamlRoot, ICallable)
 class YamlRootStorage(YamlStorage):
 
     @default
@@ -81,3 +77,13 @@ class YamlMemberStorage(YamlStorage):
     @property
     def storage(self):
         return self._storage
+
+
+@implementer(ICallable)
+class YamlCallableMember(Behavior):
+
+    @override
+    def __call__(self):
+        yaml_root = self.acquire(IYamlRoot)
+        if yaml_root:
+            yaml_root()

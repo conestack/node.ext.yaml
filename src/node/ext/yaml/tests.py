@@ -1,3 +1,4 @@
+from node.ext.yaml import YamlCallableMember
 from node.ext.yaml import YamlFile
 from node.ext.yaml import YamlMemberStorage
 from node.ext.yaml import YamlNode
@@ -108,7 +109,10 @@ class TestYaml(NodeTestCase):
             ]))
         ]))
 
-        sub()
+        with self.assertRaises(TypeError):
+            sub()
+
+        file()
         with open(file.fs_path) as f:
             self.assertEqual(f.read().split('\n'), [
                 'foo: bar',
@@ -133,6 +137,26 @@ class TestYaml(NodeTestCase):
 
         file.factories = dict()
         self.assertEqual(file['child'], odict([('baz', 'bam'), ('sub', odict())]))
+
+    @temp_directory
+    def test_YamlCallableMember(self, tempdir):
+        class TestYamlFile(YamlFile):
+            @property
+            def fs_path(self):
+                return os.path.join(tempdir, 'data.yaml')
+
+        @plumbing(YamlCallableMember)
+        class TestYamlMember(YamlNode):
+            pass
+
+        file = TestYamlFile()
+        child = file['child'] = TestYamlMember()
+        child()
+        with open(file.fs_path) as f:
+            self.assertEqual(f.read().split('\n'), [
+                'child: {}',
+                ''
+            ])
 
     @temp_directory
     def test_Order(self, tempdir):

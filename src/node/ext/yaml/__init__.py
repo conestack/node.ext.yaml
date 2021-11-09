@@ -1,3 +1,4 @@
+from .behaviors import YamlCallableMember  # noqa
 from .behaviors import YamlMemberStorage
 from .behaviors import YamlRootStorage
 from node.behaviors import Adopt
