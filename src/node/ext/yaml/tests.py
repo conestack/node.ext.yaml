@@ -6,11 +6,13 @@ from node.ext.yaml import YamlRootStorage
 from node.tests import NodeTestCase
 from odict import odict
 from plumber import plumbing
+from yaml.representer import RepresenterError
 import os
 import shutil
 import sys
 import tempfile
 import unittest
+import uuid
 
 
 def temp_directory(fn):
@@ -58,6 +60,22 @@ class TestYaml(NodeTestCase):
             self.assertEqual(f.read(), 'foo: bar\n')
         root = YamlRoot()
         self.assertEqual(root.storage, odict([('foo', 'bar')]))
+
+        root = YamlRoot()
+        storage = root.storage
+        storage['bar'] = uuid.UUID('5906c219-31db-425d-964a-358a1e3f4183')
+        with self.assertRaises(RepresenterError):
+            root()
+        with open(root.fs_path) as f:
+            self.assertEqual(f.read(), 'foo: bar\n')
+        storage['bar'] = '5906c219-31db-425d-964a-358a1e3f4183'
+        root()
+        with open(root.fs_path) as f:
+            self.assertEqual(f.read().split('\n'), [
+                'foo: bar',
+                'bar: 5906c219-31db-425d-964a-358a1e3f4183',
+                ''
+            ])
 
     def test_YamlMemberStorage(self):
         @plumbing(YamlMemberStorage)
