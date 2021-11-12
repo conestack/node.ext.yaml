@@ -156,6 +156,14 @@ class TestYaml(NodeTestCase):
         file.factories = dict()
         self.assertEqual(file['child'], odict([('baz', 'bam'), ('sub', odict())]))
 
+        del file['child']
+        file()
+        with open(file.fs_path) as f:
+            self.assertEqual(f.read().split('\n'), [
+                'foo: bar',
+                ''
+            ])
+
     @temp_directory
     def test_YamlCallableMember(self, tempdir):
         class TestYamlFile(YamlFile):
