@@ -55,10 +55,9 @@ class YamlRootStorage(YamlStorage):
 
     @finalize
     def __call__(self):
-        if self.storage:
-            data = ordered_dump(self.storage, sort_keys=False)
-            with open(self.fs_path, 'w') as f:
-                f.write(data)
+        data = ordered_dump(self.storage, sort_keys=False)
+        with open(self.fs_path, 'w') as f:
+            f.write(data)
 
 
 @implementer(IYamlMember)

@@ -51,13 +51,18 @@ class TestYaml(NodeTestCase):
         self.assertEqual(storage, odict())
         self.assertTrue(storage is root.storage)
         self.assertFalse(os.path.exists(root.fs_path))
+
         root()
-        self.assertFalse(os.path.exists(root.fs_path))
+        self.assertTrue(os.path.exists(root.fs_path))
+        with open(root.fs_path) as f:
+            self.assertEqual(f.read(), '{}\n')
+
         storage['foo'] = 'bar'
         root()
         self.assertTrue(os.path.exists(root.fs_path))
         with open(root.fs_path) as f:
             self.assertEqual(f.read(), 'foo: bar\n')
+
         root = YamlRoot()
         self.assertEqual(root.storage, odict([('foo', 'bar')]))
 
@@ -69,6 +74,7 @@ class TestYaml(NodeTestCase):
         with open(root.fs_path) as f:
             self.assertEqual(f.read(), 'foo: bar\n')
         storage['bar'] = '5906c219-31db-425d-964a-358a1e3f4183'
+
         root()
         with open(root.fs_path) as f:
             self.assertEqual(f.read().split('\n'), [
@@ -163,6 +169,11 @@ class TestYaml(NodeTestCase):
                 'foo: bar',
                 ''
             ])
+
+        del file['foo']
+        file()
+        with open(file.fs_path) as f:
+            self.assertEqual(f.read(), '{}\n')
 
     @temp_directory
     def test_YamlCallableMember(self, tempdir):
