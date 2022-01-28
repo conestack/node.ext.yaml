@@ -23,7 +23,6 @@ Create a yaml file:
 .. code-block:: python
 
     from node.ext.yaml import YamlFile
-    from node.ext.yaml import YamlNode
 
     class MyYamlFile(YamlFile):
 
@@ -32,7 +31,7 @@ Create a yaml file:
             return '/path/to/file.yaml'
 
     file = MyYamlFile()
-    file['child'] = YamlNode()
+    file['child'] = 'Value'
 
     # write file to disk
     file()
@@ -40,6 +39,8 @@ Create a yaml file:
 Define factories for child nodes:
 
 .. code-block:: python
+
+    from node.ext.yaml import YamlNode
 
     class SpecificChild(YamlNode):
         pass
@@ -70,7 +71,24 @@ Define a schema for node members:
 
     file = MyYamlFile()
     file.attr['int_member'] = 1
-    file.attr['str_member'] = 'String'
+    file.attr['str_member'] = u'String'
+
+Schema members can be defined directly on class.
+
+**Note**: Be careful not to override existing API members.
+
+.. code-block:: python
+
+    from node.behaviors import SchemaProperties
+
+    @plumbing(SchemaProperties)
+    class MyYamlFile(YamlFile):
+        int_member = schema.Int()
+        str_member = schema.Str()
+
+    file = MyYamlFile()
+    file.int_member = 1
+    file.str_member = u'String'
 
 
 Python Versions

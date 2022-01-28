@@ -26,6 +26,13 @@ def temp_directory(fn):
     return wrapper
 
 
+class TestYamlNode(YamlNode):
+    pass
+
+
+TestYamlNode.factories = {'*': TestYamlNode}
+
+
 class TestYaml(NodeTestCase):
 
     @temp_directory
@@ -102,18 +109,21 @@ class TestYaml(NodeTestCase):
     @temp_directory
     def test_YamlStorage(self, tempdir):
         class TestYamlFile(YamlFile):
+            factories = {
+                '*': TestYamlNode
+            }
+
             @property
             def fs_path(self):
                 return os.path.join(tempdir, 'data.yaml')
 
         file = TestYamlFile()
-        self.assertEqual(file.factories, {'*': YamlNode})
 
         self.assertRaises(KeyError, file.__getitem__, 'inexistent')
         file['foo'] = 'bar'
         self.assertEqual(file.storage, odict([('foo', 'bar')]))
 
-        child = YamlNode()
+        child = TestYamlNode()
         child['baz'] = 'bam'
         file['child'] = child
         self.assertTrue(child.storage is file.storage['child'])
@@ -122,7 +132,7 @@ class TestYaml(NodeTestCase):
             odict([('foo', 'bar'), ('child', odict([('baz', 'bam')]))])
         )
 
-        sub = YamlNode()
+        sub = TestYamlNode()
         child['sub'] = sub
         self.assertTrue(sub.storage is file.storage['child']['sub'])
         self.assertEqual(file.storage, odict([
@@ -153,11 +163,11 @@ class TestYaml(NodeTestCase):
 
         self.checkOutput("""
         <class '...TestYamlFile'>: None
-          <class 'node.ext.yaml.YamlNode'>: child
-            baz: 'bam'
-            <class 'node.ext.yaml.YamlNode'>: sub
-          foo: 'bar'
-        """, file.treerepr())
+        __<class '...TestYamlNode'>: child
+        ____baz: 'bam'
+        ____<class '...TestYamlNode'>: sub
+        __foo: 'bar'
+        """, file.treerepr(prefix='_'))
 
         file.factories = dict()
         self.assertEqual(file['child'], odict([('baz', 'bam'), ('sub', odict())]))
@@ -201,13 +211,17 @@ class TestYaml(NodeTestCase):
         #      Either extend Order behavior to also support keys or implement
         #      dedicated YamlOrder providing this.
         class TestYamlFile(YamlFile):
+            factories = {
+                '*': TestYamlNode
+            }
+
             @property
             def fs_path(self):
                 return os.path.join(tempdir, 'data.yaml')
 
         file = TestYamlFile()
-        file['a'] = YamlNode()
-        file['b'] = YamlNode()
+        file['a'] = TestYamlNode()
+        file['b'] = TestYamlNode()
         self.assertEqual(file.keys(), ['a', 'b'])
 
         file.swap(file['a'], file['b'])

@@ -19,9 +19,6 @@ class YamlNode:
     """
 
 
-YamlNode.factories = {'*': YamlNode}
-
-
 @plumbing(
     Adopt,
     DefaultInit,
@@ -31,4 +28,3 @@ YamlNode.factories = {'*': YamlNode}
 class YamlFile:
     """A YAML file.
     """
-    factories = {'*': YamlNode}
