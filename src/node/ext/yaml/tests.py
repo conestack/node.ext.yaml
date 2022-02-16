@@ -1,8 +1,13 @@
+from node.behaviors import DefaultInit
+from node.behaviors import MappingNode
+from node.behaviors import SequenceNode
 from node.ext.yaml import YamlCallableMember
 from node.ext.yaml import YamlFile
-from node.ext.yaml import YamlMemberStorage
-from node.ext.yaml import YamlNode
+from node.ext.yaml import YamlMapping
+from node.ext.yaml import YamlMappingStorage
 from node.ext.yaml import YamlRootStorage
+from node.ext.yaml import YamlSequence
+from node.ext.yaml import YamlSequenceStorage
 from node.tests import NodeTestCase
 from odict import odict
 from plumber import plumbing
@@ -26,18 +31,25 @@ def temp_directory(fn):
     return wrapper
 
 
-class TestYamlNode(YamlNode):
+class TestYamlMapping(YamlMapping):
     pass
 
 
-TestYamlNode.factories = {'*': TestYamlNode}
+TestYamlMapping.factories = {'*': TestYamlMapping}
+
+
+class TestYamlSequence(YamlSequence):
+    pass
+
+
+TestYamlSequence.factories = {'*': TestYamlMapping}
 
 
 class TestYaml(NodeTestCase):
 
     @temp_directory
     def test_YamlRootStorage(self, tempdir):
-        @plumbing(YamlRootStorage)
+        @plumbing(DefaultInit, YamlRootStorage)
         class AbstractYamlRoot:
             pass
 
@@ -90,27 +102,40 @@ class TestYaml(NodeTestCase):
                 ''
             ])
 
-    def test_YamlMemberStorage(self):
-        @plumbing(YamlMemberStorage)
-        class YamlMember:
-            def __init__(self, name=None, parent=None):
-                self.name = name
-                self.parent = parent
+    def test_YamlMappingStorage(self):
+        @plumbing(DefaultInit, MappingNode, YamlMappingStorage)
+        class YamlMappingMember:
+            pass
 
-        member = YamlMember()
+        member = YamlMappingMember()
         self.assertIsInstance(member.storage, odict)
         self.assertEqual(member.storage, odict())
 
-        parent = YamlMember()
+        parent = YamlMappingMember()
         parent.storage['name'] = odict()
-        member = YamlMember(name='name', parent=parent)
+        member = YamlMappingMember(name='name', parent=parent)
         self.assertTrue(member.storage is parent.storage['name'])
 
+    def test_YamlSequenceStorage(self):
+        @plumbing(DefaultInit, SequenceNode, YamlSequenceStorage)
+        class YamlSequenceMember:
+            pass
+
+        member = YamlSequenceMember()
+        self.assertIsInstance(member.storage, list)
+        self.assertEqual(member.storage, list())
+
+        parent = YamlSequenceMember()
+        parent.storage.insert(0, list())
+        member = YamlSequenceMember(name='0', parent=parent)
+        self.assertTrue(member.storage is parent.storage[0])
+
     @temp_directory
-    def test_YamlStorage(self, tempdir):
+    def test_YamlFile(self, tempdir):
         class TestYamlFile(YamlFile):
             factories = {
-                '*': TestYamlNode
+                '*': TestYamlMapping,
+                'sequence': TestYamlSequence
             }
 
             @property
@@ -123,21 +148,21 @@ class TestYaml(NodeTestCase):
         file['foo'] = 'bar'
         self.assertEqual(file.storage, odict([('foo', 'bar')]))
 
-        child = TestYamlNode()
-        child['baz'] = 'bam'
-        file['child'] = child
-        self.assertTrue(child.storage is file.storage['child'])
+        mapping = TestYamlMapping()
+        mapping['baz'] = 'bam'
+        file['mapping'] = mapping
+        self.assertTrue(mapping.storage is file.storage['mapping'])
         self.assertEqual(
             file.storage,
-            odict([('foo', 'bar'), ('child', odict([('baz', 'bam')]))])
+            odict([('foo', 'bar'), ('mapping', odict([('baz', 'bam')]))])
         )
 
-        sub = TestYamlNode()
-        child['sub'] = sub
-        self.assertTrue(sub.storage is file.storage['child']['sub'])
+        sub = TestYamlMapping()
+        mapping['sub'] = sub
+        self.assertTrue(sub.storage is file.storage['mapping']['sub'])
         self.assertEqual(file.storage, odict([
             ('foo', 'bar'),
-            ('child', odict([
+            ('mapping', odict([
                 ('baz', 'bam'),
                 ('sub', odict())
             ]))
@@ -146,33 +171,53 @@ class TestYaml(NodeTestCase):
         with self.assertRaises(TypeError):
             sub()
 
+        sequence = file['sequence'] = TestYamlSequence()
+        sequence.insert(0, TestYamlMapping())
+        self.assertTrue(sequence.storage is file.storage['sequence'])
+        self.assertEqual(file.storage, odict([
+            ('foo', 'bar'),
+            ('mapping', odict([
+                ('baz', 'bam'),
+                ('sub', odict())
+            ])),
+            ('sequence', [odict()])
+        ]))
+
         file()
         with open(file.fs_path) as f:
             self.assertEqual(f.read().split('\n'), [
                 'foo: bar',
-                'child:',
+                'mapping:',
                 '  baz: bam',
                 '  sub: {}',
+                'sequence:',
+                '- {}',
                 ''
             ])
 
         file = TestYamlFile()
-        self.assertEqual(file.keys(), ['foo', 'child'])
+        self.assertEqual(file.keys(), ['foo', 'mapping', 'sequence'])
         self.assertEqual(file['foo'], 'bar')
-        self.assertIsInstance(file['child'], YamlNode)
+        self.assertIsInstance(file['mapping'], YamlMapping)
 
         self.checkOutput("""
         <class '...TestYamlFile'>: None
-        __<class '...TestYamlNode'>: child
-        ____baz: 'bam'
-        ____<class '...TestYamlNode'>: sub
         __foo: 'bar'
+        __<class '...TestYamlMapping'>: mapping
+        ____baz: 'bam'
+        ____<class '...TestYamlMapping'>: sub
+        __<class 'node.ext.yaml.tests.TestYamlSequence'>: sequence
+        ____<class 'node.ext.yaml.tests.TestYamlMapping'>: 0
         """, file.treerepr(prefix='_'))
 
         file.factories = dict()
-        self.assertEqual(file['child'], odict([('baz', 'bam'), ('sub', odict())]))
+        self.assertEqual(
+            file['mapping'],
+            odict([('baz', 'bam'), ('sub', odict())])
+        )
 
-        del file['child']
+        del file['mapping']
+        del file['sequence']
         file()
         with open(file.fs_path) as f:
             self.assertEqual(f.read().split('\n'), [
@@ -193,7 +238,7 @@ class TestYaml(NodeTestCase):
                 return os.path.join(tempdir, 'data.yaml')
 
         @plumbing(YamlCallableMember)
-        class TestYamlMember(YamlNode):
+        class TestYamlMember(YamlMapping):
             pass
 
         file = TestYamlFile()
@@ -212,7 +257,7 @@ class TestYaml(NodeTestCase):
         #      dedicated YamlOrder providing this.
         class TestYamlFile(YamlFile):
             factories = {
-                '*': TestYamlNode
+                '*': TestYamlMapping
             }
 
             @property
@@ -220,8 +265,8 @@ class TestYaml(NodeTestCase):
                 return os.path.join(tempdir, 'data.yaml')
 
         file = TestYamlFile()
-        file['a'] = TestYamlNode()
-        file['b'] = TestYamlNode()
+        file['a'] = TestYamlMapping()
+        file['b'] = TestYamlMapping()
         self.assertEqual(file.keys(), ['a', 'b'])
 
         file.swap(file['a'], file['b'])
