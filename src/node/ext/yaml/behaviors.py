@@ -76,22 +76,12 @@ class YamlMappingStorage(YamlStorage, YamlMember, MappingStorage):
 class YamlSequenceStorage(YamlStorage, YamlMember, SequenceStorage):
 
     @plumb
-    def __getitem__(next_, self, name):
-        if type(name) is slice:
+    def __getitem__(next_, self, index):
+        if type(index) is slice:
             raise NotImplementedError(
                 'YamlSequenceStorage not supports slicing'
             )
-        name = int(name)
-        return next_(self, name)
-
-    @plumb
-    def __setitem__(next_, self, name, value):
-        if type(name) is slice:
-            raise NotImplementedError(
-                'YamlSequenceStorage not supports slicing'
-            )
-        name = int(name)
-        next_(self, name, value)
+        return next_(self, index)
 
     @plumb
     def insert(next_, self, index, value):

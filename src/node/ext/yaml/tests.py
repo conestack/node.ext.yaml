@@ -130,6 +130,14 @@ class TestYaml(NodeTestCase):
         member = YamlSequenceMember(name='0', parent=parent)
         self.assertTrue(member.storage is parent.storage[0])
 
+        parent['0'] = 'value'
+        self.assertEqual(parent.storage, ['value'])
+
+        with self.assertRaises(NotImplementedError):
+            parent[:]
+        with self.assertRaises(NotImplementedError):
+            parent[:] = []
+
     @temp_directory
     def test_YamlFile(self, tempdir):
         class TestYamlFile(YamlFile):
