@@ -1,5 +1,6 @@
 from node.behaviors import DefaultInit
 from node.behaviors import MappingNode
+from node.behaviors import SequenceAdopt
 from node.behaviors import SequenceNode
 from node.ext.yaml import YamlCallableMember
 from node.ext.yaml import YamlFile
@@ -117,7 +118,7 @@ class TestYaml(NodeTestCase):
         self.assertTrue(member.storage is parent.storage['name'])
 
     def test_YamlSequenceStorage(self):
-        @plumbing(DefaultInit, SequenceNode, YamlSequenceStorage)
+        @plumbing(DefaultInit, SequenceAdopt, SequenceNode, YamlSequenceStorage)
         class YamlSequenceMember:
             pass
 
