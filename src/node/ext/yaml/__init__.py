@@ -2,7 +2,7 @@ from .behaviors import YamlCallableMember  # noqa
 from .behaviors import YamlMappingStorage
 from .behaviors import YamlRootStorage
 from .behaviors import YamlSequenceStorage
-from node.behaviors import Adopt
+from node.behaviors import MappingAdopt
 from node.behaviors import DefaultInit
 from node.behaviors import MappingNode
 from node.behaviors import Order
@@ -11,7 +11,7 @@ from plumber import plumbing
 
 
 @plumbing(
-    Adopt,
+    MappingAdopt,
     DefaultInit,
     MappingNode,
     Order,
@@ -35,7 +35,7 @@ class YamlSequence:
 
 
 @plumbing(
-    Adopt,
+    MappingAdopt,
     DefaultInit,
     MappingNode,
     Order,
