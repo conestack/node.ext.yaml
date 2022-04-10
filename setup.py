@@ -53,17 +53,18 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'node',
-        'plumber',
+        'node>=1.0',
         'pyyaml',
         'setuptools'
     ],
     extras_require=dict(
         test=[
+            'coverage',
             'zope.testrunner'
         ]
     ),
     tests_require=[
+        'coverage',
         'zope.testrunner'
     ],
     cmdclass=dict(test=Test)
