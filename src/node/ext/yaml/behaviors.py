@@ -6,6 +6,8 @@ from .interfaces import IYamlRoot
 from .interfaces import IYamlSequenceStorage
 from node.behaviors import MappingStorage
 from node.behaviors import SequenceStorage
+from node.ext.fs import FSLocation
+from node.ext.fs import join_fs_path
 from node.interfaces import ICallable
 from node.interfaces import IMappingNode
 from node.interfaces import ISequenceNode
@@ -91,26 +93,22 @@ class YamlSequenceStorage(YamlStorage, YamlMember, SequenceStorage):
 
 
 @implementer(IYamlRoot, ICallable)
-class YamlRootStorage(YamlMember, MappingStorage):
-
-    @default
-    @property
-    def fs_path(self):
-        msg = 'Abstract ``YamlRoot`` does not implement ``fs_path``'
-        raise NotImplementedError(msg)
+class YamlRootStorage(YamlMember, MappingStorage, FSLocation):
 
     @finalize
     @instance_property
     def storage(self):
-        if os.path.exists(self.fs_path):
-            with open(self.fs_path) as f:
+        file_path = join_fs_path(self)
+        if os.path.exists(file_path):
+            with open(file_path) as f:
                 return ordered_load(f.read())
         return odict()
 
     @finalize
     def __call__(self):
         data = ordered_dump(self.storage, sort_keys=False)
-        with open(self.fs_path, 'w') as f:
+        file_path = join_fs_path(self)
+        with open(file_path, 'w') as f:
             f.write(data)
 
 

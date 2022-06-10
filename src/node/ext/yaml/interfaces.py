@@ -2,6 +2,7 @@ from node.interfaces import IMappingStorage
 from node.interfaces import ISequenceStorage
 from zope.interface import Attribute
 from zope.interface import Interface
+from node.ext.fs.interfaces import IFile
 
 
 class IYamlMember(Interface):
@@ -43,5 +44,5 @@ class IYamlSequenceStorage(ISequenceStorage, IYamlMember):
     """
 
 
-class IYamlRoot(IMappingStorage, IYamlMember):
+class IYamlRoot(IMappingStorage, IFile, IYamlMember):
     """YAML root storage interface."""

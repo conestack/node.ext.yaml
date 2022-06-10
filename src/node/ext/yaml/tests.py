@@ -2,6 +2,8 @@ from node.behaviors import DefaultInit
 from node.behaviors import MappingNode
 from node.behaviors import SequenceAdopt
 from node.behaviors import SequenceNode
+from node.ext.fs import Directory
+from node.ext.fs import join_fs_path
 from node.ext.yaml import YamlCallableMember
 from node.ext.yaml import YamlFile
 from node.ext.yaml import YamlMapping
@@ -50,37 +52,28 @@ class TestYaml(NodeTestCase):
 
     @temp_directory
     def test_YamlRootStorage(self, tempdir):
-        @plumbing(DefaultInit, YamlRootStorage)
-        class AbstractYamlRoot:
-            pass
-
-        self.assertRaises(
-            NotImplementedError,
-            lambda: AbstractYamlRoot().fs_path
-        )
-
         @plumbing(YamlRootStorage)
         class YamlRoot:
             @property
             def fs_path(self):
-                return os.path.join(tempdir, 'data.yaml')
+                return [tempdir, 'data.yaml']
 
         root = YamlRoot()
         storage = root.storage
         self.assertIsInstance(storage, odict)
         self.assertEqual(storage, odict())
         self.assertTrue(storage is root.storage)
-        self.assertFalse(os.path.exists(root.fs_path))
+        self.assertFalse(os.path.exists(join_fs_path(root)))
 
         root()
-        self.assertTrue(os.path.exists(root.fs_path))
-        with open(root.fs_path) as f:
+        self.assertTrue(os.path.exists(join_fs_path(root)))
+        with open(join_fs_path(root)) as f:
             self.assertEqual(f.read(), '{}\n')
 
         storage['foo'] = 'bar'
         root()
-        self.assertTrue(os.path.exists(root.fs_path))
-        with open(root.fs_path) as f:
+        self.assertTrue(os.path.exists(join_fs_path(root)))
+        with open(join_fs_path(root)) as f:
             self.assertEqual(f.read(), 'foo: bar\n')
 
         root = YamlRoot()
@@ -91,12 +84,12 @@ class TestYaml(NodeTestCase):
         storage['bar'] = uuid.UUID('5906c219-31db-425d-964a-358a1e3f4183')
         with self.assertRaises(RepresenterError):
             root()
-        with open(root.fs_path) as f:
+        with open(join_fs_path(root)) as f:
             self.assertEqual(f.read(), 'foo: bar\n')
         storage['bar'] = '5906c219-31db-425d-964a-358a1e3f4183'
 
         root()
-        with open(root.fs_path) as f:
+        with open(join_fs_path(root)) as f:
             self.assertEqual(f.read().split('\n'), [
                 'foo: bar',
                 'bar: 5906c219-31db-425d-964a-358a1e3f4183',
@@ -149,7 +142,7 @@ class TestYaml(NodeTestCase):
 
             @property
             def fs_path(self):
-                return os.path.join(tempdir, 'data.yaml')
+                return [tempdir, 'data.yaml']
 
         file = TestYamlFile()
 
@@ -193,7 +186,7 @@ class TestYaml(NodeTestCase):
         ]))
 
         file()
-        with open(file.fs_path) as f:
+        with open(join_fs_path(file)) as f:
             self.assertEqual(f.read().split('\n'), [
                 'foo: bar',
                 'mapping:',
@@ -228,7 +221,7 @@ class TestYaml(NodeTestCase):
         del file['mapping']
         del file['sequence']
         file()
-        with open(file.fs_path) as f:
+        with open(join_fs_path(file)) as f:
             self.assertEqual(f.read().split('\n'), [
                 'foo: bar',
                 ''
@@ -236,7 +229,7 @@ class TestYaml(NodeTestCase):
 
         del file['foo']
         file()
-        with open(file.fs_path) as f:
+        with open(join_fs_path(file)) as f:
             self.assertEqual(f.read(), '{}\n')
 
     @temp_directory
@@ -244,7 +237,7 @@ class TestYaml(NodeTestCase):
         class TestYamlFile(YamlFile):
             @property
             def fs_path(self):
-                return os.path.join(tempdir, 'data.yaml')
+                return [tempdir, 'data.yaml']
 
         @plumbing(YamlCallableMember)
         class TestYamlMember(YamlMapping):
@@ -253,7 +246,7 @@ class TestYaml(NodeTestCase):
         file = TestYamlFile()
         child = file['child'] = TestYamlMember()
         child()
-        with open(file.fs_path) as f:
+        with open(join_fs_path(file)) as f:
             self.assertEqual(f.read().split('\n'), [
                 'child: {}',
                 ''
@@ -271,7 +264,7 @@ class TestYaml(NodeTestCase):
 
             @property
             def fs_path(self):
-                return os.path.join(tempdir, 'data.yaml')
+                return [tempdir, 'data.yaml']
 
         file = TestYamlFile()
         file['a'] = TestYamlMapping()
@@ -282,7 +275,7 @@ class TestYaml(NodeTestCase):
         self.assertEqual(file.keys(), ['b', 'a'])
 
         file()
-        with open(file.fs_path) as f:
+        with open(join_fs_path(file)) as f:
             self.assertEqual(f.read().split('\n'), [
                 'b: {}',
                 'a: {}', ''
@@ -294,11 +287,25 @@ class TestYaml(NodeTestCase):
         self.assertEqual(file.keys(), ['a', 'b'])
 
         file()
-        with open(file.fs_path) as f:
+        with open(join_fs_path(file)) as f:
             self.assertEqual(f.read().split('\n'), [
                 'a: {}',
                 'b: {}', ''
             ])
+
+    @temp_directory
+    def test_FSLocation(self, tempdir):
+        class TestDirectory(Directory):
+            default_file_factory = YamlFile
+
+        container = TestDirectory(fs_path=[tempdir])
+        container['file.yaml'] = YamlFile()
+        container()
+
+        self.assertTrue(os.path.exists(os.path.join(tempdir, 'file.yaml')))
+
+        container = TestDirectory(fs_path=[tempdir])
+        self.assertIsInstance(container['file.yaml'], YamlFile)
 
 
 def test_suite():

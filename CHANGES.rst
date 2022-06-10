@@ -4,6 +4,16 @@ Changes
 0.2 (unreleased)
 ----------------
 
+- Inherit ``YamlRootStorage`` from ``node.ext.fs.FSLocation``, which provides
+  ``fs_path`` property. Note that ``fs_path`` is handled as list now.
+  [rnix]
+
+- Inherit ``IYamlRoot`` from  ``node.ext.fs.interfaces.IFile``.
+  [rnix]
+
+- Package depends on ``node.ext.fs`` now.
+  [rnix]
+
 - Replace deprecated use of ``Adopt`` by ``MappingAdopt``.
   [rnix]
 

@@ -53,6 +53,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        'node.ext.fs',
         'node>=1.0',
         'pyyaml',
         'setuptools'
