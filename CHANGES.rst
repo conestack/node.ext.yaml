@@ -1,7 +1,7 @@
 Changes
 =======
 
-0.2 (unreleased)
+0.2 (2022-10-06)
 ----------------
 
 - Inherit ``YamlRootStorage`` from ``node.ext.fs.FSLocation``, which provides
