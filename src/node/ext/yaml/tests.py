@@ -8,9 +8,11 @@ from node.ext.yaml import YamlCallableMember
 from node.ext.yaml import YamlFile
 from node.ext.yaml import YamlMapping
 from node.ext.yaml import YamlMappingStorage
+from node.ext.yaml import YamlMember
 from node.ext.yaml import YamlRootStorage
 from node.ext.yaml import YamlSequence
 from node.ext.yaml import YamlSequenceStorage
+from node.interfaces import IWildcardFactory
 from node.tests import NodeTestCase
 from odict import odict
 from plumber import plumbing
@@ -49,6 +51,88 @@ TestYamlSequence.factories = {'*': TestYamlMapping}
 
 
 class TestYaml(NodeTestCase):
+
+    def test_YamlMember(self):
+        # YamlMember is a wildcard factory
+        @plumbing(YamlMember)
+        class MappingMember:
+            pass
+
+        member = MappingMember()
+        self.assertTrue(IWildcardFactory.providedBy(member))
+
+        # YamlMember with mapping as storage
+        @plumbing(YamlMember)
+        class MappingMember:
+            storage = dict()
+
+        member = MappingMember()
+
+        # __setitem__
+        a = YamlMapping()
+        b = YamlSequence()
+        member['a'] = a
+        member['b'] = b
+        member['c'] = 'c'
+        self.assertTrue(member.storage['a'] is a.storage)
+        self.assertEqual(member.storage['a'], odict())
+        self.assertTrue(member.storage['b'] is b.storage)
+        self.assertEqual(member.storage['b'], list())
+        self.assertEqual(member.storage['c'], 'c')
+
+        # __getitem__, default
+        self.assertEqual(member['a'], odict())
+        self.assertEqual(member['b'], list())
+        self.assertEqual(member['c'], 'c')
+
+        # __getitem__, default factories defined
+        member.default_mapping_factory = YamlMapping
+        member.default_sequence_factory = YamlSequence
+        self.assertIsInstance(member['a'], YamlMapping)
+        self.assertIsInstance(member['b'], YamlSequence)
+        self.assertEqual(member['c'], 'c')
+
+        # __getitem__, factories take precedence over default factories
+        class CustomMapping(YamlMapping):
+            pass
+
+        member.factories['a'] = CustomMapping
+        self.assertIsInstance(member['a'], CustomMapping)
+
+        # YamlMember with sequrence as storage
+        @plumbing(YamlMember)
+        class SequenceMember:
+            storage = [None, None, None]
+
+        member = SequenceMember()
+
+        # __setitem__
+        a = YamlMapping()
+        b = YamlSequence()
+        member[0] = a
+        member[1] = b
+        member[2] = 'c'
+        self.assertTrue(member.storage[0] is a.storage)
+        self.assertEqual(member.storage[0], odict())
+        self.assertTrue(member.storage[1] is b.storage)
+        self.assertEqual(member.storage[1], list())
+        self.assertEqual(member.storage[2], 'c')
+
+        # __getitem__, default
+        self.assertEqual(member[0], odict())
+        self.assertEqual(member[1], list())
+        self.assertEqual(member[2], 'c')
+
+        # __getitem__, default factories defined
+        member.default_mapping_factory = YamlMapping
+        member.default_sequence_factory = YamlSequence
+        self.assertIsInstance(member[0], YamlMapping)
+        self.assertIsInstance(member[1], YamlSequence)
+        self.assertEqual(member[2], 'c')
+
+        # __getitem__, factories take precedence over default factories
+        member.factories['0'] = CustomMapping
+        self.assertIsInstance(member[0], CustomMapping)
 
     @temp_directory
     def test_YamlRootStorage(self, tempdir):
@@ -131,6 +215,15 @@ class TestYaml(NodeTestCase):
             parent[:]
         with self.assertRaises(NotImplementedError):
             parent[:] = []
+
+        value_a = object()
+        value_b = YamlSequenceMember()
+        value_c = YamlSequenceMember()
+        parent.append(value_a)
+        parent.append(value_b)
+        self.assertTrue(value_a in parent)
+        self.assertTrue(value_b in parent)
+        self.assertFalse(value_c in parent)
 
     @temp_directory
     def test_YamlFile(self, tempdir):
@@ -253,7 +346,7 @@ class TestYaml(NodeTestCase):
             ])
 
     @temp_directory
-    def test_Order(self, tempdir):
+    def test_MappingOrder(self, tempdir):
         # XXX: Order behavior only works with node children right now.
         #      Either extend Order behavior to also support keys or implement
         #      dedicated YamlOrder providing this.
@@ -292,6 +385,74 @@ class TestYaml(NodeTestCase):
                 'a: {}',
                 'b: {}', ''
             ])
+
+    @temp_directory
+    def test_SequenceOrder(self, tempdir):
+        class TestYamlFile(YamlFile):
+            factories = {
+                '*': TestYamlSequence
+            }
+
+            @property
+            def fs_path(self):
+                return [tempdir, 'data.yaml']
+
+        file = TestYamlFile()
+        sequence = file['sequence'] = TestYamlSequence()
+        sequence.factories = dict()
+        sequence.default_mapping_factory = TestYamlMapping
+        sequence.default_sequence_factory = TestYamlSequence
+
+        mapping_member = TestYamlMapping()
+        sequence.append(mapping_member)
+        sequence_member = TestYamlSequence()
+        sequence.append(sequence_member)
+        string_member = 'NO NODE'
+        sequence.append(string_member)
+        self.assertEqual(sequence.storage, [odict(), [], 'NO NODE'])
+
+        sequence.swap(0, 1)
+        self.assertEqual(sequence.storage, [[], odict(), 'NO NODE'])
+        sequence.swap(2, 0)
+        self.assertEqual(sequence.storage, ['NO NODE', odict(), []])
+        sequence.movefirst(1)
+        self.assertEqual(sequence.storage, [odict(), 'NO NODE', []])
+        sequence.movelast(1)
+        self.assertEqual(sequence.storage, [odict(), [], 'NO NODE'])
+        sequence.movebefore(2, 1)
+        self.assertEqual(sequence.storage, [odict(), 'NO NODE', []])
+        sequence.moveafter(0, 1)
+        self.assertEqual(sequence.storage, ['NO NODE', odict(), []])
+
+        with self.assertRaises(ValueError):
+            sequence.insertfirst(sequence[2])
+        with self.assertRaises(ValueError):
+            sequence.insertlast(sequence[0])
+        with self.assertRaises(ValueError):
+            sequence.insertbefore(sequence[2], sequence[0])
+        with self.assertRaises(ValueError):
+            sequence.insertafter(sequence[0], sequence[2])
+
+        sequence.insertfirst('FIRST')
+        self.assertEqual(
+            sequence.storage,
+            ['FIRST', 'NO NODE', odict(), []]
+        )
+        sequence.insertlast('LAST')
+        self.assertEqual(
+            sequence.storage,
+            ['FIRST', 'NO NODE', odict(), [], 'LAST']
+        )
+        sequence.insertbefore('BEFORE', 1)
+        self.assertEqual(
+            sequence.storage,
+            ['FIRST', 'BEFORE', 'NO NODE', odict(), [], 'LAST']
+        )
+        sequence.insertafter('AFTER', 2)
+        self.assertEqual(
+            sequence.storage,
+            ['FIRST', 'BEFORE', 'NO NODE', 'AFTER', odict(), [], 'LAST']
+        )
 
     @temp_directory
     def test_FSLocation(self, tempdir):

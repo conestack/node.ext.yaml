@@ -1,20 +1,23 @@
 from .behaviors import YamlCallableMember  # noqa
 from .behaviors import YamlMappingStorage
+from .behaviors import YamlMember  # noqa
 from .behaviors import YamlRootStorage
 from .behaviors import YamlSequenceStorage
-from node.behaviors import MappingAdopt
 from node.behaviors import DefaultInit
+from node.behaviors import MappingAdopt
 from node.behaviors import MappingNode
-from node.behaviors import Order
+from node.behaviors import MappingOrder
+from node.behaviors import SequenceAdopt
 from node.behaviors import SequenceNode
+from node.behaviors import SequenceOrder
 from plumber import plumbing
 
 
 @plumbing(
-    MappingAdopt,
     DefaultInit,
+    MappingAdopt,
     MappingNode,
-    Order,
+    MappingOrder,
     YamlMappingStorage)
 class YamlMapping:
     """A YAML mapping node.
@@ -27,7 +30,9 @@ YamlNode = YamlMapping
 
 @plumbing(
     DefaultInit,
+    SequenceAdopt,
     SequenceNode,
+    SequenceOrder,
     YamlSequenceStorage)
 class YamlSequence:
     """A YAML sequence node.
@@ -35,10 +40,10 @@ class YamlSequence:
 
 
 @plumbing(
-    MappingAdopt,
     DefaultInit,
+    MappingAdopt,
     MappingNode,
-    Order,
+    MappingOrder,
     YamlRootStorage)
 class YamlFile:
     """A YAML file.

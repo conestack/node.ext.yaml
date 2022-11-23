@@ -6,6 +6,7 @@ from .interfaces import IYamlRoot
 from .interfaces import IYamlSequenceStorage
 from node.behaviors import MappingStorage
 from node.behaviors import SequenceStorage
+from node.behaviors import WildcardFactory
 from node.ext.fs import FSLocation
 from node.ext.fs import join_fs_path
 from node.interfaces import ICallable
@@ -23,14 +24,22 @@ import os
 
 
 @implementer(IYamlMember)
-class YamlMember(Behavior):
+class YamlMember(WildcardFactory):
     factories = default(dict())
+    default_mapping_factory = default(None)
+    default_sequence_factory = default(None)
 
     @override
     def __getitem__(self, name):
         value = self.storage[name]
         if isinstance(value, odict) or isinstance(value, list):
-            factory = self.factories.get(name, self.factories.get('*'))
+            factory = self.factory_for_pattern(str(name))
+            if factory is None:
+                factory = (
+                    self.default_mapping_factory
+                    if isinstance(value, odict)
+                    else self.default_sequence_factory
+                )
             if factory is not None:
                 value = factory(name=name, parent=self)
         return value
@@ -90,6 +99,15 @@ class YamlSequenceStorage(YamlStorage, YamlMember, SequenceStorage):
         if IYamlMember.providedBy(value):
             value = value.storage
         next_(self, index, value)
+
+    @override
+    def __contains__(self, value):
+        if IYamlMember.providedBy(value):
+            value = value.storage
+        for v in self.storage:
+            if v is value:
+                return True
+        return False
 
 
 @implementer(IYamlRoot, ICallable)
