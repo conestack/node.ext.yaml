@@ -1,15 +1,23 @@
+from node.ext.fs.interfaces import IFile
 from node.interfaces import IMappingStorage
 from node.interfaces import ISequenceStorage
+from node.interfaces import IWildcardFactory
 from zope.interface import Attribute
-from zope.interface import Interface
-from node.ext.fs.interfaces import IFile
 
 
-class IYamlMember(Interface):
+class IYamlMember(IWildcardFactory):
     """YAML member interface.
     """
 
     factories = Attribute('Dictionary defining child factories.')
+
+    default_mapping_factory = Attribute(
+        'Default factory for mapping members. Defaults to None.'
+    )
+
+    default_sequence_factory = Attribute(
+        'Default factory for sequence members. Defaults to None.'
+    )
 
     def __getitem__(name):
         """"""
