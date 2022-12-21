@@ -1,7 +1,7 @@
 Changes
 =======
 
-0.3 (unreleased)
+0.3 (2022-12-21)
 ----------------
 
 - ``node.ext.yaml.behaviors.YamlSequenceStorage`` implements now
