@@ -65,6 +65,7 @@ class TestYaml(NodeTestCase):
         @plumbing(YamlMember)
         class MappingMember:
             storage = dict()
+            factories = dict()
 
         member = MappingMember()
 
@@ -103,6 +104,7 @@ class TestYaml(NodeTestCase):
         @plumbing(YamlMember)
         class SequenceMember:
             storage = [None, None, None]
+            factories = dict()
 
         member = SequenceMember()
 
