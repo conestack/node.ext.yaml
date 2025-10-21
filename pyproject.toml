@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "node.ext.yaml"
+version = "0.4.dev0"
+description = "Node tree implementation for yaml files"
+readme = "README.rst"
+license = {text = "Simplified BSD"}
+authors = [{name = "Node Contributors", email = "dev@conestack.org"}]
+keywords = ["node", "yaml"]
+classifiers = [
+    "License :: OSI Approved :: BSD License",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3.3",
+    "Programming Language :: Python :: 3.4",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+]
+dependencies = [
+    "node.ext.fs",
+    "node>=1.0",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+test = [
+    "coverage",
+    "zope.testrunner",
+]
+
+[project.urls]
+Homepage = "https://github.com/conestack/node.ext.yaml"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.zest-releaser]
+create-wheel = true
