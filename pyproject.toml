@@ -16,11 +16,11 @@ classifiers = [
     "Topic :: Software Development",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 2.7",
-    "Programming Language :: Python :: 3.3",
-    "Programming Language :: Python :: 3.4",
-    "Programming Language :: Python :: 3.5",
-    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "node.ext.fs",
@@ -36,7 +36,6 @@ test = [
 
 [project.urls]
 Homepage = "https://github.com/conestack/node.ext.yaml"
-
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/node"]
