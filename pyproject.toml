@@ -23,8 +23,8 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "node.ext.fs>=2.0.0",
-    "node>=2.0.0",
+    "node.ext.fs>=1.99",
+    "node>=1.99",
     "pyyaml",
 ]
 
