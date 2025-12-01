@@ -303,8 +303,8 @@ class TestYaml(NodeTestCase):
         __<class '...TestYamlMapping'>: mapping
         ____baz: 'bam'
         ____<class '...TestYamlMapping'>: sub
-        __<class 'node.ext.yaml.tests.TestYamlSequence'>: sequence
-        ____<class 'node.ext.yaml.tests.TestYamlMapping'>: 0
+        __<class 'node.ext.yaml.tests.test_yaml.TestYamlSequence'>: sequence
+        ____<class 'node.ext.yaml.tests.test_yaml.TestYamlMapping'>: 0
         """, file.treerepr(prefix='_'))
 
         file.factories = dict()
@@ -469,25 +469,3 @@ class TestYaml(NodeTestCase):
 
         container = TestDirectory(fs_path=[tempdir])
         self.assertIsInstance(container['file.yaml'], YamlFile)
-
-
-def test_suite():
-    from node.ext.yaml import tests
-
-    suite = unittest.TestSuite()
-
-    suite.addTest(unittest.findTestCases(tests))
-
-    return suite
-
-
-def run_tests():
-    from zope.testrunner.runner import Runner
-
-    runner = Runner(found_suites=[test_suite()])
-    runner.run()
-    sys.exit(int(runner.failed))
-
-
-if __name__ == '__main__':
-    run_tests()
