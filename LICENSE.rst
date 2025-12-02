@@ -1,7 +1,7 @@
 License
 =======
 
-Copyright (c) 2021-2024, Node Contributors
+Copyright (c) 2021-2025, Node Contributors
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
