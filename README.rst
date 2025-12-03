@@ -6,6 +6,10 @@
     :target: https://pypi.python.org/pypi/node.ext.yaml
     :alt: Number of PyPI downloads
 
+.. image:: https://github.com/conestack/node.ext.yaml/actions/workflows/test.yml/badge.svg
+    :target: https://github.com/conestack/node.ext.yaml/actions/workflows/test.yml
+    :alt: Test node.ext.yaml
+
 ``node.ext.yaml`` provides a node implementation to yaml files.
 
 For more information on nodes see `node <http://pypi.python.org/pypi/node>`_
