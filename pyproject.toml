@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "node.ext.yaml"
-version = "2.0.0"
+version = "2.0.1.dev0"
 description = "Node tree implementation for yaml files"
 dynamic = ["readme"]
 requires-python = ">=3.10"
