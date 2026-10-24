@@ -6,8 +6,7 @@ from zope.interface import Attribute
 
 
 class IYamlMember(IWildcardFactory):
-    """YAML member interface.
-    """
+    """YAML member interface."""
 
     factories = Attribute('Dictionary defining child factories.')
 

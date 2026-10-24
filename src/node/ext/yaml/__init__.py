@@ -13,38 +13,20 @@ from node.behaviors import SequenceOrder
 from plumber import plumbing
 
 
-@plumbing(
-    DefaultInit,
-    MappingAdopt,
-    MappingNode,
-    MappingOrder,
-    YamlMappingStorage)
+@plumbing(DefaultInit, MappingAdopt, MappingNode, MappingOrder, YamlMappingStorage)
 class YamlMapping:
-    """A YAML mapping node.
-    """
+    """A YAML mapping node."""
 
 
 # B/C 2022-02-16
 YamlNode = YamlMapping
 
 
-@plumbing(
-    DefaultInit,
-    SequenceAdopt,
-    SequenceNode,
-    SequenceOrder,
-    YamlSequenceStorage)
+@plumbing(DefaultInit, SequenceAdopt, SequenceNode, SequenceOrder, YamlSequenceStorage)
 class YamlSequence:
-    """A YAML sequence node.
-    """
+    """A YAML sequence node."""
 
 
-@plumbing(
-    DefaultInit,
-    MappingAdopt,
-    MappingNode,
-    MappingOrder,
-    YamlRootStorage)
+@plumbing(DefaultInit, MappingAdopt, MappingNode, MappingOrder, YamlRootStorage)
 class YamlFile:
-    """A YAML file.
-    """
+    """A YAML file."""

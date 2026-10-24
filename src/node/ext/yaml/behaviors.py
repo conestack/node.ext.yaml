@@ -52,7 +52,6 @@ class YamlMember(WildcardFactory):
 
 
 class YamlStorage(Behavior):
-
     @plumb
     def __init__(next_, self, **kw):
         next_(self, **kw)
@@ -85,13 +84,10 @@ class YamlMappingStorage(YamlStorage, YamlMember, MappingStorage):
 
 @implementer(IYamlSequenceStorage)
 class YamlSequenceStorage(YamlStorage, YamlMember, SequenceStorage):
-
     @plumb
     def __getitem__(next_, self, index):
         if type(index) is slice:
-            raise NotImplementedError(
-                'YamlSequenceStorage not supports slicing'
-            )
+            raise NotImplementedError('YamlSequenceStorage not supports slicing')
         return next_(self, index)
 
     @plumb
@@ -112,7 +108,6 @@ class YamlSequenceStorage(YamlStorage, YamlMember, SequenceStorage):
 
 @implementer(IYamlRoot, ICallable)
 class YamlRootStorage(YamlMember, MappingStorage, FSLocation):
-
     @finalize
     @instance_property
     def storage(self):
@@ -132,7 +127,6 @@ class YamlRootStorage(YamlMember, MappingStorage, FSLocation):
 
 @implementer(ICallable)
 class YamlCallableMember(Behavior):
-
     @override
     def __call__(self):
         yaml_root = self.acquire(IYamlRoot)

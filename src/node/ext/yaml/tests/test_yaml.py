@@ -19,9 +19,7 @@ from plumber import plumbing
 from yaml.representer import RepresenterError
 import os
 import shutil
-import sys
 import tempfile
-import unittest
 import uuid
 
 
@@ -33,6 +31,7 @@ def temp_directory(fn):
             fn(*a, **kw)
         finally:
             shutil.rmtree(tempdir)
+
     return wrapper
 
 
@@ -51,7 +50,6 @@ TestYamlSequence.factories = {'*': TestYamlMapping}
 
 
 class TestYaml(NodeTestCase):
-
     def test_YamlMember(self):
         # YamlMember is a wildcard factory
         @plumbing(YamlMember)
@@ -176,11 +174,10 @@ class TestYaml(NodeTestCase):
 
         root()
         with open(join_fs_path(root)) as f:
-            self.assertEqual(f.read().split('\n'), [
-                'foo: bar',
-                'bar: 5906c219-31db-425d-964a-358a1e3f4183',
-                ''
-            ])
+            self.assertEqual(
+                f.read().split('\n'),
+                ['foo: bar', 'bar: 5906c219-31db-425d-964a-358a1e3f4183', ''],
+            )
 
     def test_YamlMappingStorage(self):
         @plumbing(DefaultInit, MappingNode, YamlMappingStorage)
@@ -230,10 +227,7 @@ class TestYaml(NodeTestCase):
     @temp_directory
     def test_YamlFile(self, tempdir):
         class TestYamlFile(YamlFile):
-            factories = {
-                '*': TestYamlMapping,
-                'sequence': TestYamlSequence
-            }
+            factories = {'*': TestYamlMapping, 'sequence': TestYamlSequence}
 
             @property
             def fs_path(self):
@@ -250,20 +244,18 @@ class TestYaml(NodeTestCase):
         file['mapping'] = mapping
         self.assertTrue(mapping.storage is file.storage['mapping'])
         self.assertEqual(
-            file.storage,
-            odict([('foo', 'bar'), ('mapping', odict([('baz', 'bam')]))])
+            file.storage, odict([('foo', 'bar'), ('mapping', odict([('baz', 'bam')]))])
         )
 
         sub = TestYamlMapping()
         mapping['sub'] = sub
         self.assertTrue(sub.storage is file.storage['mapping']['sub'])
-        self.assertEqual(file.storage, odict([
-            ('foo', 'bar'),
-            ('mapping', odict([
-                ('baz', 'bam'),
-                ('sub', odict())
-            ]))
-        ]))
+        self.assertEqual(
+            file.storage,
+            odict(
+                [('foo', 'bar'), ('mapping', odict([('baz', 'bam'), ('sub', odict())]))]
+            ),
+        )
 
         with self.assertRaises(TypeError):
             sub()
@@ -271,33 +263,39 @@ class TestYaml(NodeTestCase):
         sequence = file['sequence'] = TestYamlSequence()
         sequence.insert(0, TestYamlMapping())
         self.assertTrue(sequence.storage is file.storage['sequence'])
-        self.assertEqual(file.storage, odict([
-            ('foo', 'bar'),
-            ('mapping', odict([
-                ('baz', 'bam'),
-                ('sub', odict())
-            ])),
-            ('sequence', [odict()])
-        ]))
+        self.assertEqual(
+            file.storage,
+            odict(
+                [
+                    ('foo', 'bar'),
+                    ('mapping', odict([('baz', 'bam'), ('sub', odict())])),
+                    ('sequence', [odict()]),
+                ]
+            ),
+        )
 
         file()
         with open(join_fs_path(file)) as f:
-            self.assertEqual(f.read().split('\n'), [
-                'foo: bar',
-                'mapping:',
-                '  baz: bam',
-                '  sub: {}',
-                'sequence:',
-                '- {}',
-                ''
-            ])
+            self.assertEqual(
+                f.read().split('\n'),
+                [
+                    'foo: bar',
+                    'mapping:',
+                    '  baz: bam',
+                    '  sub: {}',
+                    'sequence:',
+                    '- {}',
+                    '',
+                ],
+            )
 
         file = TestYamlFile()
         self.assertEqual(file.keys(), ['foo', 'mapping', 'sequence'])
         self.assertEqual(file['foo'], 'bar')
         self.assertIsInstance(file['mapping'], YamlMapping)
 
-        self.checkOutput("""
+        self.checkOutput(
+            """
         <class '...TestYamlFile'>: None
         __foo: 'bar'
         __<class '...TestYamlMapping'>: mapping
@@ -305,22 +303,18 @@ class TestYaml(NodeTestCase):
         ____<class '...TestYamlMapping'>: sub
         __<class 'node.ext.yaml.tests.test_yaml.TestYamlSequence'>: sequence
         ____<class 'node.ext.yaml.tests.test_yaml.TestYamlMapping'>: 0
-        """, file.treerepr(prefix='_'))
+        """,
+            file.treerepr(prefix='_'),
+        )
 
         file.factories = dict()
-        self.assertEqual(
-            file['mapping'],
-            odict([('baz', 'bam'), ('sub', odict())])
-        )
+        self.assertEqual(file['mapping'], odict([('baz', 'bam'), ('sub', odict())]))
 
         del file['mapping']
         del file['sequence']
         file()
         with open(join_fs_path(file)) as f:
-            self.assertEqual(f.read().split('\n'), [
-                'foo: bar',
-                ''
-            ])
+            self.assertEqual(f.read().split('\n'), ['foo: bar', ''])
 
         del file['foo']
         file()
@@ -342,10 +336,7 @@ class TestYaml(NodeTestCase):
         child = file['child'] = TestYamlMember()
         child()
         with open(join_fs_path(file)) as f:
-            self.assertEqual(f.read().split('\n'), [
-                'child: {}',
-                ''
-            ])
+            self.assertEqual(f.read().split('\n'), ['child: {}', ''])
 
     @temp_directory
     def test_MappingOrder(self, tempdir):
@@ -353,9 +344,7 @@ class TestYaml(NodeTestCase):
         #      Either extend Order behavior to also support keys or implement
         #      dedicated YamlOrder providing this.
         class TestYamlFile(YamlFile):
-            factories = {
-                '*': TestYamlMapping
-            }
+            factories = {'*': TestYamlMapping}
 
             @property
             def fs_path(self):
@@ -371,10 +360,7 @@ class TestYaml(NodeTestCase):
 
         file()
         with open(join_fs_path(file)) as f:
-            self.assertEqual(f.read().split('\n'), [
-                'b: {}',
-                'a: {}', ''
-            ])
+            self.assertEqual(f.read().split('\n'), ['b: {}', 'a: {}', ''])
 
         file = TestYamlFile()
         self.assertEqual(file.keys(), ['b', 'a'])
@@ -383,17 +369,12 @@ class TestYaml(NodeTestCase):
 
         file()
         with open(join_fs_path(file)) as f:
-            self.assertEqual(f.read().split('\n'), [
-                'a: {}',
-                'b: {}', ''
-            ])
+            self.assertEqual(f.read().split('\n'), ['a: {}', 'b: {}', ''])
 
     @temp_directory
     def test_SequenceOrder(self, tempdir):
         class TestYamlFile(YamlFile):
-            factories = {
-                '*': TestYamlSequence
-            }
+            factories = {'*': TestYamlSequence}
 
             @property
             def fs_path(self):
@@ -436,24 +417,16 @@ class TestYaml(NodeTestCase):
             sequence.insertafter(sequence[0], sequence[2])
 
         sequence.insertfirst('FIRST')
-        self.assertEqual(
-            sequence.storage,
-            ['FIRST', 'NO NODE', odict(), []]
-        )
+        self.assertEqual(sequence.storage, ['FIRST', 'NO NODE', odict(), []])
         sequence.insertlast('LAST')
-        self.assertEqual(
-            sequence.storage,
-            ['FIRST', 'NO NODE', odict(), [], 'LAST']
-        )
+        self.assertEqual(sequence.storage, ['FIRST', 'NO NODE', odict(), [], 'LAST'])
         sequence.insertbefore('BEFORE', 1)
         self.assertEqual(
-            sequence.storage,
-            ['FIRST', 'BEFORE', 'NO NODE', odict(), [], 'LAST']
+            sequence.storage, ['FIRST', 'BEFORE', 'NO NODE', odict(), [], 'LAST']
         )
         sequence.insertafter('AFTER', 2)
         self.assertEqual(
-            sequence.storage,
-            ['FIRST', 'BEFORE', 'NO NODE', 'AFTER', odict(), [], 'LAST']
+            sequence.storage, ['FIRST', 'BEFORE', 'NO NODE', 'AFTER', odict(), [], 'LAST']
         )
 
     @temp_directory
