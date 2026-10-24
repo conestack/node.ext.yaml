@@ -35,18 +35,18 @@ def temp_directory(fn):
     return wrapper
 
 
-class TestYamlMapping(YamlMapping):
+class YamlMappingNode(YamlMapping):
     pass
 
 
-TestYamlMapping.factories = {'*': TestYamlMapping}
+YamlMappingNode.factories = {'*': YamlMappingNode}
 
 
-class TestYamlSequence(YamlSequence):
+class YamlSequenceNode(YamlSequence):
     pass
 
 
-TestYamlSequence.factories = {'*': TestYamlMapping}
+YamlSequenceNode.factories = {'*': YamlMappingNode}
 
 
 class TestYaml(NodeTestCase):
@@ -227,7 +227,7 @@ class TestYaml(NodeTestCase):
     @temp_directory
     def test_YamlFile(self, tempdir):
         class TestYamlFile(YamlFile):
-            factories = {'*': TestYamlMapping, 'sequence': TestYamlSequence}
+            factories = {'*': YamlMappingNode, 'sequence': YamlSequenceNode}
 
             @property
             def fs_path(self):
@@ -239,7 +239,7 @@ class TestYaml(NodeTestCase):
         file['foo'] = 'bar'
         self.assertEqual(file.storage, odict([('foo', 'bar')]))
 
-        mapping = TestYamlMapping()
+        mapping = YamlMappingNode()
         mapping['baz'] = 'bam'
         file['mapping'] = mapping
         self.assertTrue(mapping.storage is file.storage['mapping'])
@@ -247,7 +247,7 @@ class TestYaml(NodeTestCase):
             file.storage, odict([('foo', 'bar'), ('mapping', odict([('baz', 'bam')]))])
         )
 
-        sub = TestYamlMapping()
+        sub = YamlMappingNode()
         mapping['sub'] = sub
         self.assertTrue(sub.storage is file.storage['mapping']['sub'])
         self.assertEqual(
@@ -260,8 +260,8 @@ class TestYaml(NodeTestCase):
         with self.assertRaises(TypeError):
             sub()
 
-        sequence = file['sequence'] = TestYamlSequence()
-        sequence.insert(0, TestYamlMapping())
+        sequence = file['sequence'] = YamlSequenceNode()
+        sequence.insert(0, YamlMappingNode())
         self.assertTrue(sequence.storage is file.storage['sequence'])
         self.assertEqual(
             file.storage,
@@ -298,11 +298,11 @@ class TestYaml(NodeTestCase):
             """
         <class '...TestYamlFile'>: None
         __foo: 'bar'
-        __<class '...TestYamlMapping'>: mapping
+        __<class '...YamlMappingNode'>: mapping
         ____baz: 'bam'
-        ____<class '...TestYamlMapping'>: sub
-        __<class 'node.ext.yaml.tests.test_yaml.TestYamlSequence'>: sequence
-        ____<class 'node.ext.yaml.tests.test_yaml.TestYamlMapping'>: 0
+        ____<class '...YamlMappingNode'>: sub
+        __<class 'node.ext.yaml.tests.test_yaml.YamlSequenceNode'>: sequence
+        ____<class 'node.ext.yaml.tests.test_yaml.YamlMappingNode'>: 0
         """,
             file.treerepr(prefix='_'),
         )
@@ -344,15 +344,15 @@ class TestYaml(NodeTestCase):
         #      Either extend Order behavior to also support keys or implement
         #      dedicated YamlOrder providing this.
         class TestYamlFile(YamlFile):
-            factories = {'*': TestYamlMapping}
+            factories = {'*': YamlMappingNode}
 
             @property
             def fs_path(self):
                 return [tempdir, 'data.yaml']
 
         file = TestYamlFile()
-        file['a'] = TestYamlMapping()
-        file['b'] = TestYamlMapping()
+        file['a'] = YamlMappingNode()
+        file['b'] = YamlMappingNode()
         self.assertEqual(file.keys(), ['a', 'b'])
 
         file.swap(file['a'], file['b'])
@@ -374,21 +374,21 @@ class TestYaml(NodeTestCase):
     @temp_directory
     def test_SequenceOrder(self, tempdir):
         class TestYamlFile(YamlFile):
-            factories = {'*': TestYamlSequence}
+            factories = {'*': YamlSequenceNode}
 
             @property
             def fs_path(self):
                 return [tempdir, 'data.yaml']
 
         file = TestYamlFile()
-        sequence = file['sequence'] = TestYamlSequence()
+        sequence = file['sequence'] = YamlSequenceNode()
         sequence.factories = dict()
-        sequence.default_mapping_factory = TestYamlMapping
-        sequence.default_sequence_factory = TestYamlSequence
+        sequence.default_mapping_factory = YamlMappingNode
+        sequence.default_sequence_factory = YamlSequenceNode
 
-        mapping_member = TestYamlMapping()
+        mapping_member = YamlMappingNode()
         sequence.append(mapping_member)
-        sequence_member = TestYamlSequence()
+        sequence_member = YamlSequenceNode()
         sequence.append(sequence_member)
         string_member = 'NO NODE'
         sequence.append(string_member)
